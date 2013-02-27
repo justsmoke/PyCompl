@@ -2,8 +2,8 @@ PyComp
 ======
 Usage:
 
-Put the file PyComp.vim in directory ~/.vim/after/ftplugin/python/
+Put the file python_Compl.vim in directory ~/.vim/after/ftplugin/
 
-Add 'filetype plugin on' to your ~/.vimrc
+Add 'filetype plugin on' to your ~/.vimrc configuration file
 
 Enjoy it!
