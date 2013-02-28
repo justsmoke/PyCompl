@@ -1,9 +1,14 @@
 PyCompl
 ======
-Usage:
+<b>Introduction</b>
 
-Put file python_Compl.vim in directory ~/.vim/after/ftplugin/
+This plugin provides automatic completion on method names
 
-Add line 'filetype plugin on' to your ~/.vimrc configuration file
+contained in the '__builtin__' module and modules imported in your python script
 
-Enjoy it!
+
+<b>Usage</b>
+
+Copy file python_Compl.vim to directory '~/.vim/after/ftplugin/'
+
+And make sure your '~/.vimrc' file contains line 'filetype plugin on'
