@@ -1,29 +1,33 @@
-" Author: YiFan Zhang (yifan.zhang.work1989@gmail.com)
+" Author: YiFan Zhang (just.ff.smoke@gmail.com)
 
 if v:version < 700
 	echoerr "vim 7.0 is required"
 	finish
 endif
 
-inoremap <buffer> <silent> <Tab> <C-R>=<SID>Compl('Down')<CR>
+if exists("b:did_pyCompl")
+	finish
+endif
+let b:did_pyCompl = 1
 
+inoremap <buffer> <silent> <Tab> <C-R>=<SID>Compl('Down')<CR>
 inoremap <buffer> <silent> <S-Tab> <C-R>=<SID>Compl('Up')<CR>
 
-fun! s:Compl(direction)
+func! s:Compl(direction)
 	if match(strpart(getline('.'), 0, col('.')-1), '\S') == -1
 		return "\<Tab>"
 	endif
 	if !pumvisible()
-		return "\<C-X>\<C-U>"
+		return "\<C-X>\<C-O>"
 	else
 		if a:direction == 'Up'
 			return "\<Up>"
 		else
 			return "\<Down>"
 	endif
-endfun
+endfunc
 
-fun! PyCompl(findstart, base)
+func! ftplugin#python_Compl#PyCompl(findstart, base)
 	if a:findstart
 		let s:res = []
 		let s:pos = col('.')-1
@@ -31,17 +35,16 @@ fun! PyCompl(findstart, base)
 		while s:pos >= 0 && s:line[s:pos] !~ '\s'
 			let s:pos -= 1
 		endwhile
-		let s:pos += 1
-		return s:pos
+		return s:pos + 1
 	else
 		call s:MakeDict(a:base)
 		return s:res
 	endif
-endfun
+endfunc
 
-set completefunc=PyCompl
+set omnifunc=ftplugin#python_Compl#PyCompl
 
-fun! s:MakeDict(base)
+func! s:MakeDict(base)
 python << EOF
 import vim
 
@@ -68,7 +71,7 @@ def dest(moduleList, parts):
 		return [word + item[len(prefix):] for item in dir(mod) if item.startswith(prefix)]
 	except Exception, e:
 		pass
-	return ''
+	return []
 
 def init(l):
 	if l.startswith("import "):
@@ -95,4 +98,4 @@ parts = origin(dependDict, word.split('.'))
 result = dest(moduleList, parts)
 vim.command("let s:res = %s" % str(result))
 EOF
-endfun
+endfunc
