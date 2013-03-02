@@ -1,4 +1,4 @@
-" Author: YiFan Zhang (just.ff.smoke@gmail.com)
+" Author: YiFan Zhang (yifan.zhang.work1989@gmail.com)
 
 if v:version < 700
 	echoerr "vim 7.0 is required"
