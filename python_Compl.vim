@@ -1,4 +1,4 @@
-" Author: YiFan Zhang (yifan.zhang.work1989@gmail.com)
+" Author: YiFan Zhang (zhangyf.work@yahoo.com)
 
 if v:version < 700
 	echoerr "vim 7.0 is required"
@@ -49,7 +49,7 @@ python << EOF
 import vim
 
 dependDict = {}
-moduleList = ['__builtin__']
+moduleList = []
 
 def origin(dependDict, parts):
 	name = parts[0]
@@ -59,19 +59,15 @@ def origin(dependDict, parts):
 	return parts
 
 def dest(moduleList, parts):
-	first = parts[0]
-	try:
-		if first in moduleList:
-			mod = __import__(first)
-		else:
-			mod = __import__('__builtin__')
-		for k in range(1, len(parts)-1):
-			mod = getattr(mod, parts[k])
-		prefix = parts[-1]
-		return [word + item[len(prefix):] for item in dir(mod) if item.startswith(prefix)]
-	except Exception, e:
-		pass
-	return []
+	mod = parts[0]
+	if mod in moduleList:
+		mod = __import__(mod)
+	else:
+		return []
+	for k in range(1, len(parts)-1):
+		mod = getattr(mod, parts[k])
+	prefix = parts[-1]
+	return [word + item[len(prefix):] for item in dir(mod) if item.startswith(prefix)]
 
 def init(l):
 	if l.startswith("import "):
@@ -92,8 +88,6 @@ def init(l):
 word = vim.eval("a:base")
 for line in vim.current.buffer:
 	init(line.strip())
-for item in dir(__builtins__):
-	dependDict[item] = '__builtin__'
 parts = origin(dependDict, word.split('.'))
 result = dest(moduleList, parts)
 vim.command("let s:res = %s" % str(result))
