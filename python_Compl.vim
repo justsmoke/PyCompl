@@ -1,95 +1,96 @@
-" Author: YiFan Zhang (zhangyf.work@yahoo.com)
+" Author: justff
 
 if v:version < 700
-	echoerr "vim 7.0 is required"
+	echoerr 'vim 7.0 required'
+endif
+
+if exists("b:did_PyCompl")
 	finish
 endif
 
-if exists("b:did_pyCompl")
-	finish
-endif
-let b:did_pyCompl = 1
+let b:did_PyCompl = 1
 
-inoremap <buffer> <silent> <Tab> <C-R>=<SID>Compl('Down')<CR>
-inoremap <buffer> <silent> <S-Tab> <C-R>=<SID>Compl('Up')<CR>
-
-func! s:Compl(direction)
-	if match(strpart(getline('.'), 0, col('.')-1), '\S') == -1
+function Find(direction)
+	let b:pos = col('.') - 2
+	let b:line = getline('.')
+	while b:pos > 0 && b:line[b:pos] =~ '\a'
+		let b:pos -= 1
+	endwhile
+	if b:pos == 0 || b:line[b:pos] != '.'
 		return "\<Tab>"
 	endif
-	if !pumvisible()
-		return "\<C-X>\<C-O>"
-	else
-		if a:direction == 'Up'
-			return "\<Up>"
+	if pumvisible()
+		if a:direction == 'Down'
+			return "\<C-N>"
 		else
-			return "\<Down>"
-	endif
-endfunc
-
-func! ftplugin#python_Compl#PyCompl(findstart, base)
-	if a:findstart
-		let s:res = []
-		let s:pos = col('.')-1
-		let s:line = getline('.')
-		while s:pos >= 0 && s:line[s:pos] !~ '\s'
-			let s:pos -= 1
-		endwhile
-		return s:pos + 1
+			return "\<C-P>"
+		endif
 	else
-		call s:MakeDict(a:base)
-		return s:res
+	 	return "\<C-X>\<C-O>"
 	endif
 endfunc
 
-set omnifunc=ftplugin#python_Compl#PyCompl
+function PyComplFunc(findstart, base)
+	if a:findstart
+		let b:pos = col('.') - 2
+		let b:line = getline('.')
+		while b:pos > 0 && b:line[b:pos] !~ '\s'
+			let b:pos -= 1
+		endwhile
+		return b:pos
+	else
+		return MakeDict(a:base)
+endfunction
 
-func! s:MakeDict(base)
+set omnifunc=PyComplFunc
+
+inoremap <buffer><silent> <Tab> <C-R>=Find('Down')<CR>
+inoremap <buffer><silent> <S-Tab> <C-R>=Find('Up')<CR>
+
+function MakeDict(base)
 python << EOF
 import vim
 
-dependDict = {}
-moduleList = []
+modules = set()
+depend_dict = {}
 
-def origin(dependDict, parts):
-	name = parts[0]
-	while name in dependDict:
-		name = dependDict[name]
-		parts.insert(0, name)
-	return parts
+def makeDependecy():
+	for line in vim.current.buffer:
+		if line.startswith('from'):
+			part = line.split(' ', 3)
+			if part[0] == 'from' and part[2] == 'import':
+				module = part[1]
+				modules.add(module.strip())
+				for method in part[3].split(','):
+					depend_dict[method.strip()] = module
+		if line.startswith('import'):
+			part = line.split(' ', 1)
+			if part[0] == 'import':
+				for module in part[1].split(','):
+					modules.add(module.strip())
 
-def dest(moduleList, parts):
-	mod = parts[0]
-	if mod in moduleList:
-		mod = __import__(mod)
-	else:
-		return []
-	for k in range(1, len(parts)-1):
-		mod = getattr(mod, parts[k])
-	prefix = parts[-1]
-	return [word + item[len(prefix):] for item in dir(mod) if item.startswith(prefix)]
+def makeList(prefix):
+	part = prefix.split()[-1].split('.')
+	mod = part[0]
+	while mod in depend_dict:
+		tmp = depend_dict[mod]
+		if tmp == mod:
+			break
+		else:
+			mod = tmp
+	if mod in modules:
+		obj  = __import__(mod)
+		for i in part[1:-2]:
+			obj = getattr(obj, i)
+		header = prefix[:-len(part[-1])]
+		return [header + entry for entry in dir(obj) if entry.startswith(part[-1])]
+	return []
 
-def init(l):
-	if l.startswith("import "):
-		for mod in l.split(' ', 1)[1].split(','):
-			moduleList.append(mod.strip())
-	if l.startswith("from "):
-	  	part = l.split(' ', 3)
-	  	if part[2] == 'import':
-	  		mod = part[1]
-	  		moduleList.append(mod)
-	  		if part[3] == '*':
-	  			for method in dir(__import__(mod)):
-					dependDict[method] = mod
-	  		else:
-	  			for method in part[3].split(','):
-					dependDict[method.strip()] = mod
-
-word = vim.eval("a:base")
-for line in vim.current.buffer:
-	init(line.strip())
-parts = origin(dependDict, word.split('.'))
-result = dest(moduleList, parts)
-vim.command("let s:res = %s" % str(result))
+if __name__ == '__main__':
+	makeDependecy()
+	prefix = vim.eval("a:base").strip()
+	res = makeList(prefix)
+	vim.command("let b:result_list = " + str(res))
 EOF
-endfunc
+return b:result_list
+endfunction
