@@ -11,11 +11,6 @@ endif
 let b:did_PyCompl = 1
 
 function Find(direction)
-  let b:pos = col('.') - 2
-  let b:line = getline('.')
-  if b:line[b:pos] != '.'
-    return "\<Tab>"
-  endif
   if pumvisible()
     if a:direction == 'Down'
       return "\<C-N>"
@@ -24,6 +19,11 @@ function Find(direction)
     endif
   else
      return "\<C-X>\<C-O>"
+  endif
+  let b:pos = col('.') - 2
+  let b:line = getline('.')
+  if b:line[b:pos] != '.'
+    return "\<Tab>"
   endif
 endfunc
 
